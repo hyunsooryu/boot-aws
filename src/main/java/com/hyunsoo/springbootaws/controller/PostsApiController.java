@@ -5,6 +5,9 @@ import com.hyunsoo.springbootaws.dto.PostsSaveRequestDto;
 import com.hyunsoo.springbootaws.dto.PostsUpdateRequestDto;
 import com.hyunsoo.springbootaws.service.PostsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -17,6 +20,14 @@ public class PostsApiController {
 
     @PostMapping("/api/v1/posts")
     public Long save(@RequestBody PostsSaveRequestDto requestDto){
+        //TODO validator 개발
+        boolean isValidPosts =
+                StringUtils.hasLength(requestDto.getTitle()) &&
+                StringUtils.hasLength(requestDto.getAuthor()) &&
+                StringUtils.hasLength(requestDto.getContent());
+        if(!isValidPosts) {
+            throw new IllegalArgumentException("올바른 게시글이 아닙니다.");
+        }
         return postsService.save(requestDto);
     }
 
@@ -30,10 +41,16 @@ public class PostsApiController {
         return postsService.findById(id);
     }
 
+    @DeleteMapping("/api/v1/posts/{id}")
+    public Long delete(@PathVariable Long id){
+        postsService.delete(id);
+        return id;
+    }
 
-    @ExceptionHandler(Exception.class)
-    public Map<String,String> postAPiExceptionHandler(Exception exception){
-        return Collections.singletonMap("message", exception.getMessage());
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String,String>> postAPiExceptionHandler(Exception exception){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Collections.singletonMap("message", exception.getMessage()));
     }
 
 }
